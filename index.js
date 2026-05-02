@@ -16,15 +16,13 @@ if (!BOT_TOKEN) throw new Error("Missing BOT_TOKEN");
 if (!MONGODB_URI) throw new Error("Missing MONGODB_URI");
 if (!WEBHOOK_DOMAIN) throw new Error("Missing WEBHOOK_DOMAIN");
 
-const OWNER_ID = parseInt(process.env.OWNER_ID || "0");
-
 // =====================
-// SAFONE API (Documentation Updated)
+// SAFONE API
 // =====================
 const SAFONE_API = "https://api.safone.vip/chatbot";
 
 // =====================
-// BOT
+// BOT & DB INIT
 // =====================
 const bot = new Telegraf(BOT_TOKEN);
 const mongoClient = new MongoClient(MONGODB_URI);
@@ -32,9 +30,6 @@ const mongoClient = new MongoClient(MONGODB_URI);
 let sessions;
 let chats;
 
-// =====================
-// INIT DB
-// =====================
 async function initDB() {
   try {
     await mongoClient.connect();
@@ -63,20 +58,28 @@ async function sendLong(ctx, text) {
 }
 
 // =====================
-// SAFONE AI CALL (Updated Parameters)
+// SAFONE AI CALL (Updated Logic)
 // =====================
 async function getAIReply(prompt, userId) {
   try {
-    // API Docs အရ message အစား query သုံးရပါမယ်၊ results နဲ့ ပြန်စာထုတ်ရပါမယ်
+    // API Documentation အရ လိုအပ်တဲ့ parameters တွေ အကုန်ထည့်ထားပါတယ်
     const url = `${SAFONE_API}?query=${encodeURIComponent(prompt)}&user_id=${userId}&bot_name=Nora&bot_master=Hanthar`;
     
     const res = await fetch(url);
     const data = await res.json();
 
-    return data?.results || data?.message || "နားမလည်ဘူး ဖြစ်နေတယ်ရှင့် 😅";
+    // API က results သို့မဟုတ် response သို့မဟုတ် message ထဲမှာ အဖြေပေးတတ်ပါတယ်
+    const finalResult = data?.results || data?.response || data?.message;
+
+    if (finalResult) {
+      return finalResult;
+    } else {
+      console.log("API Result Empty. Full Data:", JSON.stringify(data));
+      return "နားမလည်ဘူး ဖြစ်နေတယ်ဗျာ😅 (API မှ အဖြေမရပါ)";
+    }
   } catch (err) {
-    console.log("Safone error:", err.message);
-    return "AI error 🥲 (API ချိတ်ဆက်မှု မရပါ)";
+    console.log("Safone API Error:", err.message);
+    return "AI error 🥲 (API ချိတ်ဆက်မှု အဆင်မပြေပါ)";
   }
 }
 
@@ -114,7 +117,7 @@ bot.command("clear", async (ctx) => {
 bot.on("text", async (ctx) => {
   const text = ctx.message.text;
 
-  // Save chat metadata
+  // Save to DB
   if (chats) {
     await chats.updateOne(
       { _id: ctx.chat.id },
@@ -125,16 +128,16 @@ bot.on("text", async (ctx) => {
 
   await ctx.sendChatAction("typing");
 
-  // prompt နဲ့ userId နှစ်ခုလုံး ပို့ပေးရပါမယ်
+  // prompt နဲ့ user id ပို့ပြီး AI အဖြေယူမယ်
   const reply = await getAIReply(text, ctx.from.id);
   await sendLong(ctx, reply);
 });
 
 // =====================
-// WEBHOOK (Railway/Render)
+// WEBHOOK & SERVER
 // =====================
 const app = express();
-const SECRET_PATH = "/webhook"; // အရှုပ်အရှင်းကင်းအောင် /webhook ပဲ သုံးပါမယ်
+const SECRET_PATH = "/webhook"; 
 
 app.get("/", (req, res) => {
   res.send("HANTHAR bot running ✅");
@@ -142,7 +145,7 @@ app.get("/", (req, res) => {
 
 app.post(SECRET_PATH, express.json(), bot.webhookCallback(SECRET_PATH));
 
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 8080;
 
 (async () => {
   await initDB();
@@ -150,6 +153,7 @@ const PORT = process.env.PORT || 10000;
   app.listen(PORT, async () => {
     console.log("Server running on port", PORT);
     try {
+      // WEBHOOK_DOMAIN က https://... ဖြစ်ရပါမယ်
       await bot.telegram.setWebhook(WEBHOOK_DOMAIN + SECRET_PATH);
       console.log("Webhook set ✅");
     } catch (e) {
