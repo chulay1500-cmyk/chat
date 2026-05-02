@@ -1,7 +1,7 @@
 "use strict";
 
 require("dotenv").config();
-const { Telegraf, Markup } = require("telegraf");
+const { Telegraf } = require("telegraf");
 const { MongoClient } = require("mongodb");
 const express = require("express");
 
@@ -17,9 +17,18 @@ if (!MONGODB_URI) throw new Error("Missing MONGODB_URI");
 if (!WEBHOOK_DOMAIN) throw new Error("Missing WEBHOOK_DOMAIN");
 
 // =====================
-// SAFONE API
+// SAFONE API & FALLBACK DATA
 // =====================
 const SAFONE_API = "https://api.safone.vip/chatbot";
+
+// AI နားမလည်ရင် သုံးဖို့ မြန်မာလို Template စာသားများ
+const MYANMAR_FALLBACKS = [
+  "ဟုတ်... ဘာပြောလိုက်တာလဲ၊ ကျွန်တော် သေချာနားမလည်လိုက်ဘူး 😅",
+  "ဟုတ်ကဲ့ဗျာ၊ အခုပြောတာလေးကို မြန်မာလိုပဲ ပိုရှင်းအောင် တစ်ချက်လောက် ပြန်ပြောပြပေးပါဦးနော် 💜",
+  "ဟီး... ကျွန်တော် နည်းနည်း ဇဝေဇဝါ ဖြစ်သွားလို့ပါ၊ နောက်တစ်ခေါက် ပြန်မေးကြည့်ပါဦးလားဗျ ✨",
+  "အိုကေပါ၊ ကျွန်တော် နားထောင်နေတယ်နော်။ ဒါပေမဲ့ အခုပြောတာကို ဘယ်လိုပြန်ဖြေရမလဲ စဉ်းစားမရလို့ပါဗျာ 😌",
+  "စိတ်မရှိပါနဲ့နော်၊ ကျွန်တော် က မြန်မာလိုပဲ ပိုနားလည်တာမို့လို့ မြန်မာလိုပဲ ပြန်ပြောပေးပါဦး 🫶"
+];
 
 // =====================
 // BOT & DB INIT
@@ -27,8 +36,7 @@ const SAFONE_API = "https://api.safone.vip/chatbot";
 const bot = new Telegraf(BOT_TOKEN);
 const mongoClient = new MongoClient(MONGODB_URI);
 
-let sessions;
-let chats;
+let sessions, chats;
 
 async function initDB() {
   try {
@@ -58,30 +66,31 @@ async function sendLong(ctx, text) {
 }
 
 // =====================
-// SAFONE AI CALL (မြန်မာလို ပိုပီသအောင် ပြင်ဆင်ထားသည်)
+// SAFONE AI CALL (Updated with strict Myanmar instructions)
 // =====================
 async function getAIReply(prompt, userId) {
   try {
-    // AI ကို မြန်မာလိုပဲ ဖြေခိုင်းဖို့ Master Instructions ထည့်ထားပါတယ်
     const botName = encodeURIComponent("Hanthar");
-    const instructions = encodeURIComponent("You are Hanthar, a cute and friendly Myanmar boy. You must always reply in Myanmar (Burmese) language clearly. Be helpful and polite.");
+    // AI ကို မြန်မာလိုပဲ ဖြေဖို့ အသေအလဲ ညွှန်ကြားထားပါတယ်
+    const instructions = encodeURIComponent(
+      "You are Hanthar, a friendly Myanmar AI. YOU MUST REPLY ONLY IN BURMESE (MYANMAR) LANGUAGE. Never use English. If you don't understand, be polite in Burmese."
+    );
 
     const url = `${SAFONE_API}?query=${encodeURIComponent(prompt)}&user_id=${userId}&bot_name=${botName}&bot_master=${instructions}`;
     
     const res = await fetch(url);
     const data = await res.json();
-
-    // API ရဲ့ Response ပုံစံမျိုးစုံကို စစ်ထုတ်တာပါ
     const finalResult = data?.results || data?.response || data?.message;
 
-    if (finalResult) {
-      return finalResult;
-    } else {
-      return "နားမလည်ဘူး ဖြစ်နေတယ်ဗျာ 😅 (API မှ အဖြေမရပါ)";
+    // အကယ်၍ အဖြေပြန်မလာရင် သို့မဟုတ် အဖြေက English ဖြစ်နေရင် Fallback သုံးမယ်
+    if (!finalResult || /^[A-Za-z\s.,!?]+$/.test(finalResult)) {
+      return MYANMAR_FALLBACKS[Math.floor(Math.random() * MYANMAR_FALLBACKS.length)];
     }
+
+    return finalResult;
   } catch (err) {
-    console.log("Safone API Error:", err.message);
-    return "AI error 🥲 (API ချိတ်ဆက်မှု အဆင်မပြေပါ)";
+    console.log("Safone Error:", err.message);
+    return MYANMAR_FALLBACKS[0]; // Error တက်ရင်လည်း မြန်မာလိုပဲ ပြန်မယ်
   }
 }
 
@@ -90,7 +99,6 @@ async function getAIReply(prompt, userId) {
 // =====================
 bot.start(async (ctx) => {
   const name = getName(ctx);
-  // Font အလှလေးများဖြင့် ပြင်ဆင်ထားသည်
   const welcomeText = `𝐇𝐞𝐥𝐥𝐨 ${name} 👋\n\n𝐇𝐀𝐍𝐓𝐇𝐀𝐑 𝐀𝐈 ရဲ့ ကမ္ဘာလေးထဲကို ကြိုဆိုပါတယ်ဗျာ 🤍\n\nကျွန်တော်က သင့်အတွက် အဖော်မွန်လည်းဖြစ်၊ မေးသမျှကိုလည်း မြန်မာလို သေချာဖြေကြားပေးမှာပါနော် ✨`;
 
   await ctx.reply(welcomeText, {
@@ -101,7 +109,7 @@ bot.start(async (ctx) => {
           { text: "📢 Support Channel", url: "https://t.me/myanmarbot_music" },
           { text: "🎧 Support Chat", url: "https://t.me/myanmar_music_Bot2027" }
         ],
-        [{ text: "👨‍💻DEV", url: "https://t.me/HANTHAR999" }]
+        [{ text: "👨‍💻 DEV", url: "https://t.me/HANTHAR999" }]
       ]
     }
   });
@@ -157,7 +165,7 @@ const PORT = process.env.PORT || 8080;
       await bot.telegram.setWebhook(WEBHOOK_DOMAIN + SECRET_PATH);
       console.log("Webhook set ✅");
     } catch (e) {
-      console.error("Webhook Setup Error:", e.message);
+      console.error("Webhook Error:", e.message);
     }
   });
 })();
