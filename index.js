@@ -80,12 +80,28 @@ async function getAIReply(prompt) {
 }
 
 // =====================
-// COMMANDS
+// COMMANDS (Start with Buttons)
 // =====================
 bot.start(async (ctx) => {
-  await ctx.reply(
-    `ဟယ်လို ${getName(ctx)} 👋\nHANTHAR AI ready 💜`
-  );
+  const name = getName(ctx);
+  const welcomeText = `ဟယ်လို ${name} 👋\nHANTHAR AI ရဲ့ ကမ္ဘာလေးထဲကို ကြိုဆိုပါတယ်ရှင့် 💜\n\n ကျွန်​ေတာ်က သင့်အတွက် အဖော်မွန်လည်းဖြစ်၊ မေးသမျှကိုလည်း ဖြေကြားပေးမှာပါနော် ✨`;
+
+  await ctx.reply(welcomeText, {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "➕ Add Nora to your group", url: `https://t.me/${ctx.botInfo.username}?startgroup=true` }
+        ],
+        [
+          { text: "📢 Support Channel", url: "https://t.me/myanmarbot_music" }, // <-- သင့် Link ပြောင်းရန်
+          { text: "🎧 Support Chat", url: "https://t.me/myanmar_music_Bot2027" }      // <-- သင့် Link ပြောင်းရန်
+        ],
+        [
+          { text: "👨‍💻 Owner", url: "https://t.me/HANTHAR999" }   // <-- သင့် Username ပြောင်းရန်
+        ]
+      ]
+    }
+  });
 });
 
 bot.command("clear", async (ctx) => {
@@ -114,7 +130,7 @@ bot.on("text", async (ctx) => {
 });
 
 // =====================
-// WEBHOOK (Render)
+// WEBHOOK (Railway/Render)
 // =====================
 const app = express();
 const SECRET_PATH = `/bot${BOT_TOKEN}`;
