@@ -133,7 +133,7 @@ bot.on("text", async (ctx) => {
 // WEBHOOK (Railway/Render)
 // =====================
 const app = express();
-const SECRET_PATH = `/bot${BOT_TOKEN}`;
+const SECRET_PATH = `/webhook`;
 
 app.get("/", (req, res) => {
   res.send("HANTHAR bot running ✅");
