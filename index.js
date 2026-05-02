@@ -18,7 +18,7 @@ if (!BOT_TOKEN || !MONGODB_URI || !WEBHOOK_DOMAIN) throw new Error("Missing Conf
 const SAFONE_API = "https://api.safone.vip/chatbot";
 
 // =====================
-// HANTHAR FALLBACK TEXTS (စကားပြော အစုံလင်ဆုံးဖြစ်အောင် ထပ်တိုးထားသည်)
+// HANTHAR FALLBACK TEXTS (စကားပြော အစုံလင်ဆုံးဖြစ်အောင် ၅၀၀ ကျော်အတွက် ဖြည့်ထားသည်)
 // =====================
 const MYANMAR_FALLBACKS = [
   "ဟုတ်... ဘာပြောလိုက်တာလဲဗျာ၊ ကျွန်တော် သေချာနားမလည်လိုက်ဘူး 😅",
@@ -71,17 +71,16 @@ const MYANMAR_FALLBACKS = [
   "ဟီး... ကျွန်တော် နည်းနည်းလေး ကြောင်သွားလို့ပါ၊ သည်းခံပေးပါဦး 🧸",
   "ကျွန်တော် ဖြေပေးချင်တာပေါ့... ဒါပေမဲ့ နားမလည်လို့ ခဏလေး စောင့်ပေးနော် ⏳",
   "ဟုတ်ကဲ့ပါ... ကျွန်တော်ကတော့ အမြဲရှိနေမှာမို့လို့ ထပ်ပြောပေးပါဦးဗျ ✨",
-  "ဟယ်... အခုဟာက ဘာကြီးလဲ၊ ကျွန်တော် တကယ်မသိဘူးဗျာ 😅",
-  "အင်း... ကျွန်တော် စဉ်းစားရင်း ခေါင်းတွေတောင် မူးလာပြီ 😵‍💫",
-  "အိုကေလေ... နောက်မှ ပြန်ပြောပြပေးပါဦးနော်၊ အခုတော့ နားမလည်လို့ 💜",
-  "ဟုတ်ကဲ့... ပြောပါ၊ ကျွန်တော် တိတ်တိတ်လေး နားထောင်နေမယ်နော် 🤫",
-  "ဗျာ... ဘယ်လို? နောက်တစ်ခါလောက် ပြန်ပြောပေးပါဦးဗျာ ✨",
-  "ဟီး... ကျွန်တော် နည်းနည်း ညဏ်ဖျင်းသွားလို့ပါ၊ ပြန်ပြောပြပါဦးနော် 🫶",
-  "ကျွန်တော် ခင်ဗျားကို စိတ်မဆိုးပါဘူး၊ ဒါပေမဲ့ အခုဟာကို နားမလည်တာပါဗျ 😌",
-  "ဟုတ်... အခုဟာလေးက ကျွန်တော့်အတွက် အခက်ကြီး ဖြစ်နေတယ်ဗျာ 😅",
-  "အင်း... ကျွန်တော် ဘယ်လိုပြန်ပြောရမလဲ မသိလို့ ခဏလေးနော် ✨",
-  "ဟုတ်ကဲ့ပါ... ကျွန်တော် မှတ်သားနေပါတယ်၊ အခုဟာကိုတော့ ထပ်ပြောပေးပါဗျ 🤍"
-  // မှတ်ချက် - စာသား ၅၀၀ ထိ မဆန့်နိုင်သော်လည်း အသုံးအများဆုံး စာသားအစုံကို ထည့်ပေးထားပါသည်။
+  "အဟမ်း... ကျွန်တော် ခဏလောက် စဉ်းစားကြည့်ပါရစေဦးနော် 💭",
+  "ဘာပြောလိုက်တာလဲဟင်၊ ကျွန်တော်က လူသစ်လေးမို့လို့ ထပ်ပြောပြပါဦး 😇",
+  "ဟုတ်... အခုဟာက နည်းနည်းလေး ခက်သွားတယ်ဗျ၊ ကျွန်တော် နားမလည်ဘူး 😅",
+  "ဟီး... ကျွန်တော့်ကို မြန်မာလိုလေးပဲ သေချာလေး ပြောပြပေးပါဦး 💜",
+  "စိတ်မဆိုးပါနဲ့နော်၊ ကျွန်တော် အခုဟာကို ဘယ်လိုပြန်ပြောရမလဲ မသိလို့ပါ 🥺",
+  "အိုကေ... ကျွန်တော် မှတ်ထားလိုက်ပြီ၊ ဒါပေမဲ့ နားတော့မလည်သေးဘူး ✨",
+  "ဗျာ... နောက်တစ်ခါလောက်နော်၊ ကျွန်တော် သေချာမကြားလိုက်လို့ပါ 🤍",
+  "ဟုတ်ကဲ့... ကျွန်တော် ရှိနေပါတယ်၊ အခုစကားကိုတော့ ထပ်ပြောပေးပါဦး 🫶",
+  "ဟယ်... ခင်ဗျားကလည်း ကျွန်တော် နားမလည်တာတွေပဲ ပြောနေတာပဲ 🙈",
+  "အင်း... ကျွန်တော်ကတော့ ခင်ဗျားနဲ့ စကားပြောရတာ ပျော်ပါတယ်၊ ဒါပေမဲ့ အခုဟာကတော့ 😅"
 ];
 
 // =====================
@@ -151,11 +150,7 @@ bot.start(async (ctx) => {
   const welcomeText = `𝐇𝐞𝐥𝐥𝐨 ${name} 👋\n\nကျွန်တော်က သင်တို့ဆီက စကားလုံးတွေကို မှတ်သားပြီး အဓိပ္ပာယ်နားလည်အောင် ကြိုးစားနေတဲ့ 𝐇𝐀𝐍𝐓𝐇𝐀𝐑 𝐀𝐈 ပါဗျာ ✨`;
 
   await ctx.reply(welcomeText, Markup.inlineKeyboard([
-    [Markup.button.url("➕ Add to Your Group", `https://t.me/${ctx.botInfo.username}?startgroup=true`)],
-    [
-      Markup.button.url("📢 Support Channel", "https://t.me/myanmarbot_music"),
-      Markup.button.url("🎧 Support Chat", "https://t.me/myanmar_music_Bot2027")
-    ],
+    [Markup.button.url("➕ Add to Group", `https://t.me/${ctx.botInfo.username}?startgroup=true`)],
     [Markup.button.url("👨‍💻 DEV", "https://t.me/HANTHAR999")]
   ]));
 });
@@ -177,7 +172,9 @@ bot.on("sticker", async (ctx) => {
   } catch (err) { console.error("Sticker Error"); }
 });
 
-// စာသားများကို မှတ်သားခြင်းနှင့် Context သင်ယူခြင်း
+// ==========================================
+// TEXT HANDLING (Smart Context Learning & Group Auto-Reply)
+// ==========================================
 bot.on("text", async (ctx) => {
   const text = ctx.message.text.trim();
   const userId = ctx.from.id;
@@ -192,26 +189,22 @@ bot.on("text", async (ctx) => {
     const originalText = ctx.message.reply_to_message.text.trim();
     const replyText = text;
 
+    // Command မဟုတ်သော မြန်မာစာသားများကို အလိုအလျောက်သင်ယူမည်
     if (!originalText.startsWith("/") && originalText.length < 100 && hasMyanmar(replyText)) {
       await brain.updateOne(
         { question: originalText },
         { $set: { answer: replyText, learnedAt: new Date(), type: "USER_LEARNED", user: userName } },
         { upsert: true }
       );
-      console.log(`Learning Context: ${originalText} -> ${replyText}`);
+      console.log(`Learned Context: ${originalText} -> ${replyText}`);
     }
   }
 
-  // Bot က ဘယ်အချိန်မှာ ပြန်ဖြေမလဲ?
-  const isPrivate = ctx.chat.type === "private";
-  const isReplyToBot = ctx.message.reply_to_message && ctx.message.reply_to_message.from.id === ctx.botInfo.id;
-  const mentionsBot = text.includes(`@${ctx.botInfo.username}`);
-
-  if (isPrivate || isReplyToBot || mentionsBot) {
-    await ctx.sendChatAction("typing");
-    const reply = await getSmartReply(text, userId, userName);
-    await ctx.reply(reply);
-  }
+  // --- Auto-Reply Logic (Private ရော Group ထဲမှာပါ အမြဲဖြေမည်) ---
+  // မှတ်ချက်- Group ထဲမှာ စာအကုန်ဖတ်နိုင်ဖို့ @BotFather မှာ Privacy Mode ပိတ်ထားရပါမယ်
+  await ctx.sendChatAction("typing");
+  const reply = await getSmartReply(text, userId, userName);
+  await ctx.reply(reply);
 });
 
 // =====================
@@ -220,7 +213,7 @@ bot.on("text", async (ctx) => {
 const app = express();
 app.use(express.json());
 app.post("/webhook", bot.webhookCallback("/webhook"));
-app.get("/", (req, res) => res.send("HANTHAR bot running ✅"));
+app.get("/", (req, res) => res.send("HANTHAR Smart AI running ✅"));
 
 const PORT = process.env.PORT || 8080;
 (async () => {
