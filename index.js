@@ -104,7 +104,7 @@ bot.start(async (ctx) => {
   await ctx.reply(welcomeText, {
     reply_markup: {
       inline_keyboard: [
-        [{ text: "➕ Add Nora to your group", url: `https://t.me/${ctx.botInfo.username}?startgroup=true` }],
+        [{ text: "➕ Add to your group", url: `https://t.me/${ctx.botInfo.username}?startgroup=true` }],
         [
           { text: "📢 Support Channel", url: "https://t.me/myanmarbot_music" },
           { text: "🎧 Support Chat", url: "https://t.me/myanmar_music_Bot2027" }
