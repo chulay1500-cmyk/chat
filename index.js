@@ -88,7 +88,7 @@ async function getAIReply(prompt, userId) {
 // =====================
 bot.start(async (ctx) => {
   const name = getName(ctx);
-  const welcomeText = `ဟယ်လို ${name} 👋\nHANTHAR AI ရဲ့ ကမ္ဘာလေးထဲကို ကြိုဆိုပါတယ်ရှင့် 💜\n\n ကျွန်​ေတာ်က သင့်အတွက် အဖော်မွန်လည်းဖြစ်၊ မေးသမျှကိုလည်း ဖြေကြားပေးမှာပါနော် ✨`;
+  const welcomeText = `ဟယ်လို ${name} 👋\nHANTHAR AI ရဲ့ ကမ္ဘာလေးထဲကို ကြိုဆိုပါတယ်ဗျာ 🤍 \n\n ကျွန်​ေတာ်က သင့်အတွက် အဖော်မွန်လည်းဖြစ်၊ မေးသမျှကိုလည်း ဖြေကြားပေးမှာပါနော် ✨`;
 
   await ctx.reply(welcomeText, {
     reply_markup: {
