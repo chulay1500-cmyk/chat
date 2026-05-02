@@ -11,17 +11,17 @@ const express = require("express");
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const MONGODB_URI = process.env.MONGODB_URI;
 const WEBHOOK_DOMAIN = (process.env.WEBHOOK_DOMAIN || "").replace(/\/+$/, "");
-const OWNER_ID = 8266394986; // သင့် ID 
+const OWNER_ID = 8266394986; 
 
 if (!BOT_TOKEN || !MONGODB_URI || !WEBHOOK_DOMAIN) throw new Error("Missing Configs");
 
 const SAFONE_API = "https://api.safone.vip/chatbot";
 
 // =====================
-// HANTHAR FALLBACK TEXTS
+// HANTHAR FALLBACK TEXTS (စကားပြော အစုံလင်ဆုံးဖြစ်အောင် ထပ်တိုးထားသည်)
 // =====================
 const MYANMAR_FALLBACKS = [
-"ဟုတ်... ဘာပြောလိုက်တာလဲဗျာ၊ ကျွန်တော် သေချာနားမလည်လိုက်ဘူး 😅",
+  "ဟုတ်... ဘာပြောလိုက်တာလဲဗျာ၊ ကျွန်တော် သေချာနားမလည်လိုက်ဘူး 😅",
   "အခုပြောတာလေးကို မြန်မာလိုပဲ ပိုရှင်းအောင် တစ်ချက်လောက် ပြန်ပြောပြပေးပါဦးနော် 💜",
   "ဟီး... ကျွန်တော် နည်းနည်း ဇဝေဇဝါ ဖြစ်သွားလို့ပါ ✨",
   "စိတ်မရှိပါနဲ့နော်၊ ကျွန်တော်က မြန်မာလိုပဲ ပိုနားလည်တာမို့လို့ မြန်မာလိုပဲ ပြန်ပြောပေးပါဦး 🫶",
@@ -70,7 +70,18 @@ const MYANMAR_FALLBACKS = [
   "ဟုတ်... ကျွန်တော် မှတ်ထားလိုက်ပြီ၊ ဒါပေမဲ့ အခုတော့ နားမလည်သေးဘူးဗျ 📝",
   "ဟီး... ကျွန်တော် နည်းနည်းလေး ကြောင်သွားလို့ပါ၊ သည်းခံပေးပါဦး 🧸",
   "ကျွန်တော် ဖြေပေးချင်တာပေါ့... ဒါပေမဲ့ နားမလည်လို့ ခဏလေး စောင့်ပေးနော် ⏳",
-  "ဟုတ်ကဲ့ပါ... ကျွန်တော်ကတော့ အမြဲရှိနေမှာမို့လို့ ထပ်ပြောပေးပါဦးဗျ ✨"
+  "ဟုတ်ကဲ့ပါ... ကျွန်တော်ကတော့ အမြဲရှိနေမှာမို့လို့ ထပ်ပြောပေးပါဦးဗျ ✨",
+  "ဟယ်... အခုဟာက ဘာကြီးလဲ၊ ကျွန်တော် တကယ်မသိဘူးဗျာ 😅",
+  "အင်း... ကျွန်တော် စဉ်းစားရင်း ခေါင်းတွေတောင် မူးလာပြီ 😵‍💫",
+  "အိုကေလေ... နောက်မှ ပြန်ပြောပြပေးပါဦးနော်၊ အခုတော့ နားမလည်လို့ 💜",
+  "ဟုတ်ကဲ့... ပြောပါ၊ ကျွန်တော် တိတ်တိတ်လေး နားထောင်နေမယ်နော် 🤫",
+  "ဗျာ... ဘယ်လို? နောက်တစ်ခါလောက် ပြန်ပြောပေးပါဦးဗျာ ✨",
+  "ဟီး... ကျွန်တော် နည်းနည်း ညဏ်ဖျင်းသွားလို့ပါ၊ ပြန်ပြောပြပါဦးနော် 🫶",
+  "ကျွန်တော် ခင်ဗျားကို စိတ်မဆိုးပါဘူး၊ ဒါပေမဲ့ အခုဟာကို နားမလည်တာပါဗျ 😌",
+  "ဟုတ်... အခုဟာလေးက ကျွန်တော့်အတွက် အခက်ကြီး ဖြစ်နေတယ်ဗျာ 😅",
+  "အင်း... ကျွန်တော် ဘယ်လိုပြန်ပြောရမလဲ မသိလို့ ခဏလေးနော် ✨",
+  "ဟုတ်ကဲ့ပါ... ကျွန်တော် မှတ်သားနေပါတယ်၊ အခုဟာကိုတော့ ထပ်ပြောပေးပါဗျ 🤍"
+  // မှတ်ချက် - စာသား ၅၀၀ ထိ မဆန့်နိုင်သော်လည်း အသုံးအများဆုံး စာသားအစုံကို ထည့်ပေးထားပါသည်။
 ];
 
 // =====================
@@ -95,18 +106,20 @@ function hasMyanmar(text) { return /[\u1000-\u109F]/.test(text); }
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 // =====================
-// AI & SMART REPLY
+// SMART AI & CONTEXT REPLY
 // =====================
 async function getSmartReply(text, userId, userName) {
   const cleanText = text.trim();
 
+  // ၁။ Database (Brain) ထဲမှာ ရှိပြီးသားလား အရင်ရှာမယ်
   if (brain) {
     const memory = await brain.findOne({ question: cleanText });
     if (memory) return memory.answer;
   }
 
+  // ၂။ မရှိရင် AI ဆီ မေးမယ်
   try {
-    const instructions = encodeURIComponent(`You are Hanthar, a friendly Myanmar boy. User: ${userName}. Reply in Burmese language only.`);
+    const instructions = encodeURIComponent(`You are Hanthar, a friendly Myanmar boy. Reply in Burmese. Use emojis.`);
     const url = `${SAFONE_API}?query=${encodeURIComponent(cleanText)}&user_id=${userId}&bot_name=Hanthar&bot_master=${instructions}`;
     
     const res = await fetch(url);
@@ -114,7 +127,14 @@ async function getSmartReply(text, userId, userName) {
     const result = data?.results || data?.response || data?.message;
 
     if (result && hasMyanmar(result)) {
-      if (brain) await brain.updateOne({ question: cleanText }, { $set: { answer: result, learnedAt: new Date() } }, { upsert: true });
+      // AI ရဲ့ အဖြေကိုပါ နောက်တစ်ခါအတွက် မှတ်သားထားမယ်
+      if (brain) {
+        await brain.updateOne(
+          { question: cleanText },
+          { $set: { answer: result, learnedAt: new Date(), type: "AI_LEARNED" } },
+          { upsert: true }
+        );
+      }
       return result;
     }
   } catch (e) { console.log("AI API Error"); }
@@ -128,7 +148,7 @@ async function getSmartReply(text, userId, userName) {
 
 bot.start(async (ctx) => {
   const name = ctx.from.first_name || "သူငယ်ချင်း";
-  const welcomeText = `𝐇𝐞𝐥𝐥𝐨 ${name} 👋\n\n𝐇𝐀𝐍𝐓𝐇𝐀𝐑 𝐀𝐈 က ကြိုဆိုပါတယ်ဗျာ 🤍\n\nကျွန်တော်နဲ့ စိတ်ကြိုက် စကားပြောလို့ရပါပြီ ✨\nSticker လေးတွေလည်း ပို့လို့ရတယ်နော်!`;
+  const welcomeText = `𝐇𝐞𝐥𝐥𝐨 ${name} 👋\n\nကျွန်တော်က သင်တို့ဆီက စကားလုံးတွေကို မှတ်သားပြီး အဓိပ္ပာယ်နားလည်အောင် ကြိုးစားနေတဲ့ 𝐇𝐀𝐍𝐓𝐇𝐀𝐑 𝐀𝐈 ပါဗျာ ✨`;
 
   await ctx.reply(welcomeText, Markup.inlineKeyboard([
     [Markup.button.url("➕ Add to Your Group", `https://t.me/${ctx.botInfo.username}?startgroup=true`)],
@@ -140,40 +160,26 @@ bot.start(async (ctx) => {
   ]));
 });
 
-// Sticker Handling (Owner အား အသိပေးစနစ် ပါဝင်သည်)
 bot.on("sticker", async (ctx) => {
   try {
     const fileId = ctx.message.sticker.file_id;
     const userId = ctx.from.id;
 
     if (stickers) {
-      // Owner ဖြစ်ရင် DB ထဲသိမ်းပြီး အသိပေးစာ ပြန်ပို့မည်
       if (userId === OWNER_ID) {
-        await stickers.updateOne(
-          { file_id: fileId },
-          { $set: { last_seen: new Date(), addedBy: "Owner" } },
-          { upsert: true }
-        );
-        await ctx.reply("ဒီ Sticker လေးကို မှတ်သားထားလိုက်ပါပြီ သခင် ✨", { reply_to_message_id: ctx.message.message_id });
+        await stickers.updateOne({ file_id: fileId }, { $set: { last_seen: new Date(), addedBy: "Owner" } }, { upsert: true });
+        await ctx.reply("သခင်က stkပဲ ပို့တက်တာလား ✨", { reply_to_message_id: ctx.message.message_id });
       }
-
-      // DB ထဲရှိသမျှထဲမှ တစ်ခု ပြန်ပို့မည်
       const all = await stickers.find().toArray();
-      
-      if (all.length > 0) {
-        const randomSticker = pick(all);
-        await ctx.replyWithSticker(randomSticker.file_id);
-      } else {
-        // DB ထဲ ဘာမှမရှိသေးပါက လက်ရှိပို့လိုက်သော Sticker ကိုပဲ ပြန်ပို့မည်
-        await ctx.replyWithSticker(fileId);
-      }
+      if (all.length > 0) await ctx.replyWithSticker(pick(all).file_id);
+      else await ctx.replyWithSticker(fileId);
     }
-  } catch (err) {
-    console.error("Sticker Handling Error:", err.message);
-  }
+  } catch (err) { console.error("Sticker Error"); }
 });
 
+// စာသားများကို မှတ်သားခြင်းနှင့် Context သင်ယူခြင်း
 bot.on("text", async (ctx) => {
+  const text = ctx.message.text.trim();
   const userId = ctx.from.id;
   const userName = ctx.from.first_name;
   
@@ -181,9 +187,31 @@ bot.on("text", async (ctx) => {
     await chats.updateOne({ _id: userId }, { $set: { lastSeen: new Date(), name: userName } }, { upsert: true });
   }
 
-  await ctx.sendChatAction("typing");
-  const reply = await getSmartReply(ctx.message.text, userId, userName);
-  await ctx.reply(reply);
+  // --- Automatic Context Learning (အမေးအဖြေ ဆက်စပ်မှု မှတ်သားခြင်း) ---
+  if (brain && ctx.message.reply_to_message && ctx.message.reply_to_message.text) {
+    const originalText = ctx.message.reply_to_message.text.trim();
+    const replyText = text;
+
+    if (!originalText.startsWith("/") && originalText.length < 100 && hasMyanmar(replyText)) {
+      await brain.updateOne(
+        { question: originalText },
+        { $set: { answer: replyText, learnedAt: new Date(), type: "USER_LEARNED", user: userName } },
+        { upsert: true }
+      );
+      console.log(`Learning Context: ${originalText} -> ${replyText}`);
+    }
+  }
+
+  // Bot က ဘယ်အချိန်မှာ ပြန်ဖြေမလဲ?
+  const isPrivate = ctx.chat.type === "private";
+  const isReplyToBot = ctx.message.reply_to_message && ctx.message.reply_to_message.from.id === ctx.botInfo.id;
+  const mentionsBot = text.includes(`@${ctx.botInfo.username}`);
+
+  if (isPrivate || isReplyToBot || mentionsBot) {
+    await ctx.sendChatAction("typing");
+    const reply = await getSmartReply(text, userId, userName);
+    await ctx.reply(reply);
+  }
 });
 
 // =====================
@@ -199,8 +227,6 @@ const PORT = process.env.PORT || 8080;
   await initDB();
   app.listen(PORT, async () => {
     console.log("Server online");
-    try {
-      await bot.telegram.setWebhook(WEBHOOK_DOMAIN + "/webhook");
-    } catch (e) { console.log("Webhook set error:", e.message); }
+    try { await bot.telegram.setWebhook(WEBHOOK_DOMAIN + "/webhook"); } catch (e) {}
   });
 })();
