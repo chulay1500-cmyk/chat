@@ -19,7 +19,7 @@ if (!WEBHOOK_DOMAIN) throw new Error("Missing WEBHOOK_DOMAIN");
 const OWNER_ID = parseInt(process.env.OWNER_ID || "0");
 
 // =====================
-// SAFONE API
+// SAFONE API (Documentation Updated)
 // =====================
 const SAFONE_API = "https://api.safone.vip/chatbot";
 
@@ -36,13 +36,15 @@ let chats;
 // INIT DB
 // =====================
 async function initDB() {
-  await mongoClient.connect();
-  const db = mongoClient.db("MYANMAR_FRIEND_BOT");
-
-  sessions = db.collection("sessions");
-  chats = db.collection("chats");
-
-  console.log("MongoDB connected ✅");
+  try {
+    await mongoClient.connect();
+    const db = mongoClient.db("MYANMAR_FRIEND_BOT");
+    sessions = db.collection("sessions");
+    chats = db.collection("chats");
+    console.log("MongoDB connected ✅");
+  } catch (err) {
+    console.error("MongoDB Connection Error:", err.message);
+  }
 }
 
 // =====================
@@ -55,32 +57,31 @@ function getName(ctx) {
 async function sendLong(ctx, text) {
   if (!text) return;
   const limit = 3900;
-
   for (let i = 0; i < text.length; i += limit) {
     await ctx.reply(text.substring(i, i + limit));
   }
 }
 
 // =====================
-// SAFONE AI CALL
+// SAFONE AI CALL (Updated Parameters)
 // =====================
-async function getAIReply(prompt) {
+async function getAIReply(prompt, userId) {
   try {
-    const res = await fetch(
-      `${SAFONE_API}?message=${encodeURIComponent(prompt)}`
-    );
-
+    // API Docs အရ message အစား query သုံးရပါမယ်၊ results နဲ့ ပြန်စာထုတ်ရပါမယ်
+    const url = `${SAFONE_API}?query=${encodeURIComponent(prompt)}&user_id=${userId}&bot_name=Nora&bot_master=Hanthar`;
+    
+    const res = await fetch(url);
     const data = await res.json();
 
-    return data?.response || data?.message || "No response 😅";
+    return data?.results || data?.message || "နားမလည်ဘူး ဖြစ်နေတယ်ရှင့် 😅";
   } catch (err) {
     console.log("Safone error:", err.message);
-    return "AI error 🥲";
+    return "AI error 🥲 (API ချိတ်ဆက်မှု မရပါ)";
   }
 }
 
 // =====================
-// COMMANDS (Start with Buttons)
+// COMMANDS
 // =====================
 bot.start(async (ctx) => {
   const name = getName(ctx);
@@ -89,43 +90,43 @@ bot.start(async (ctx) => {
   await ctx.reply(welcomeText, {
     reply_markup: {
       inline_keyboard: [
+        [{ text: "➕ Add Nora to your group", url: `https://t.me/${ctx.botInfo.username}?startgroup=true` }],
         [
-          { text: "➕ Add Nora to your group", url: `https://t.me/${ctx.botInfo.username}?startgroup=true` }
+          { text: "📢 Support Channel", url: "https://t.me/myanmarbot_music" },
+          { text: "🎧 Support Chat", url: "https://t.me/myanmar_music_Bot2027" }
         ],
-        [
-          { text: "📢 Support Channel", url: "https://t.me/myanmarbot_music" }, // <-- သင့် Link ပြောင်းရန်
-          { text: "🎧 Support Chat", url: "https://t.me/myanmar_music_Bot2027" }      // <-- သင့် Link ပြောင်းရန်
-        ],
-        [
-          { text: "👨‍💻 Owner", url: "https://t.me/HANTHAR999" }   // <-- သင့် Username ပြောင်းရန်
-        ]
+        [{ text: "👨‍💻 Owner", url: "https://t.me/HANTHAR999" }]
       ]
     }
   });
 });
 
 bot.command("clear", async (ctx) => {
-  await sessions.deleteOne({ _id: ctx.from.id });
-  await ctx.reply("Memory cleared ✅");
+  if (sessions) {
+    await sessions.deleteOne({ _id: ctx.from.id });
+    await ctx.reply("Memory cleared ✅");
+  }
 });
 
 // =====================
-// MESSAGE
+// MESSAGE HANDLING
 // =====================
 bot.on("text", async (ctx) => {
   const text = ctx.message.text;
 
-  // save chat
-  await chats.updateOne(
-    { _id: ctx.chat.id },
-    { $set: { lastSeen: new Date() } },
-    { upsert: true }
-  );
+  // Save chat metadata
+  if (chats) {
+    await chats.updateOne(
+      { _id: ctx.chat.id },
+      { $set: { lastSeen: new Date() } },
+      { upsert: true }
+    );
+  }
 
   await ctx.sendChatAction("typing");
 
-  const reply = await getAIReply(text);
-
+  // prompt နဲ့ userId နှစ်ခုလုံး ပို့ပေးရပါမယ်
+  const reply = await getAIReply(text, ctx.from.id);
   await sendLong(ctx, reply);
 });
 
@@ -133,13 +134,13 @@ bot.on("text", async (ctx) => {
 // WEBHOOK (Railway/Render)
 // =====================
 const app = express();
-const SECRET_PATH = `/webhook`;
+const SECRET_PATH = "/webhook"; // အရှုပ်အရှင်းကင်းအောင် /webhook ပဲ သုံးပါမယ်
 
 app.get("/", (req, res) => {
   res.send("HANTHAR bot running ✅");
 });
 
-app.post(SECRET_PATH, express.json(), bot.webhookCallback());
+app.post(SECRET_PATH, express.json(), bot.webhookCallback(SECRET_PATH));
 
 const PORT = process.env.PORT || 10000;
 
@@ -148,9 +149,11 @@ const PORT = process.env.PORT || 10000;
 
   app.listen(PORT, async () => {
     console.log("Server running on port", PORT);
-
-    await bot.telegram.setWebhook(WEBHOOK_DOMAIN + SECRET_PATH);
-
-    console.log("Webhook set ✅");
+    try {
+      await bot.telegram.setWebhook(WEBHOOK_DOMAIN + SECRET_PATH);
+      console.log("Webhook set ✅");
+    } catch (e) {
+      console.error("Webhook Setup Error:", e.message);
+    }
   });
 })();
