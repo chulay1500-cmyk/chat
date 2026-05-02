@@ -58,24 +58,26 @@ async function sendLong(ctx, text) {
 }
 
 // =====================
-// SAFONE AI CALL (Updated Logic)
+// SAFONE AI CALL (မြန်မာလို ပိုပီသအောင် ပြင်ဆင်ထားသည်)
 // =====================
 async function getAIReply(prompt, userId) {
   try {
-    // API Documentation အရ လိုအပ်တဲ့ parameters တွေ အကုန်ထည့်ထားပါတယ်
-    const url = `${SAFONE_API}?query=${encodeURIComponent(prompt)}&user_id=${userId}&bot_name=Nora&bot_master=Hanthar`;
+    // AI ကို မြန်မာလိုပဲ ဖြေခိုင်းဖို့ Master Instructions ထည့်ထားပါတယ်
+    const botName = encodeURIComponent("Hanthar");
+    const instructions = encodeURIComponent("You are Hanthar, a cute and friendly Myanmar boy. You must always reply in Myanmar (Burmese) language clearly. Be helpful and polite.");
+
+    const url = `${SAFONE_API}?query=${encodeURIComponent(prompt)}&user_id=${userId}&bot_name=${botName}&bot_master=${instructions}`;
     
     const res = await fetch(url);
     const data = await res.json();
 
-    // API က results သို့မဟုတ် response သို့မဟုတ် message ထဲမှာ အဖြေပေးတတ်ပါတယ်
+    // API ရဲ့ Response ပုံစံမျိုးစုံကို စစ်ထုတ်တာပါ
     const finalResult = data?.results || data?.response || data?.message;
 
     if (finalResult) {
       return finalResult;
     } else {
-      console.log("API Result Empty. Full Data:", JSON.stringify(data));
-      return "နားမလည်ဘူး ဖြစ်နေတယ်ဗျာ😅 (API မှ အဖြေမရပါ)";
+      return "နားမလည်ဘူး ဖြစ်နေတယ်ဗျာ 😅 (API မှ အဖြေမရပါ)";
     }
   } catch (err) {
     console.log("Safone API Error:", err.message);
@@ -88,7 +90,8 @@ async function getAIReply(prompt, userId) {
 // =====================
 bot.start(async (ctx) => {
   const name = getName(ctx);
-  const welcomeText = `ဟယ်လို ${name} 👋\nHANTHAR AI ရဲ့ ကမ္ဘာလေးထဲကို ကြိုဆိုပါတယ်ဗျာ 🤍 \n\n ကျွန်​ေတာ်က သင့်အတွက် အဖော်မွန်လည်းဖြစ်၊ မေးသမျှကိုလည်း ဖြေကြားပေးမှာပါနော် ✨`;
+  // Font အလှလေးများဖြင့် ပြင်ဆင်ထားသည်
+  const welcomeText = `𝐇𝐞𝐥𝐥𝐨 ${name} 👋\n\n𝐇𝐀𝐍𝐓𝐇𝐀𝐑 𝐀𝐈 ရဲ့ ကမ္ဘာလေးထဲကို ကြိုဆိုပါတယ်ဗျာ 🤍\n\nကျွန်တော်က သင့်အတွက် အဖော်မွန်လည်းဖြစ်၊ မေးသမျှကိုလည်း မြန်မာလို သေချာဖြေကြားပေးမှာပါနော် ✨`;
 
   await ctx.reply(welcomeText, {
     reply_markup: {
@@ -98,7 +101,7 @@ bot.start(async (ctx) => {
           { text: "📢 Support Channel", url: "https://t.me/myanmarbot_music" },
           { text: "🎧 Support Chat", url: "https://t.me/myanmar_music_Bot2027" }
         ],
-        [{ text: "👨‍💻 Owner", url: "https://t.me/HANTHAR999" }]
+        [{ text: "👨‍💻DEV", url: "https://t.me/HANTHAR999" }]
       ]
     }
   });
@@ -107,7 +110,7 @@ bot.start(async (ctx) => {
 bot.command("clear", async (ctx) => {
   if (sessions) {
     await sessions.deleteOne({ _id: ctx.from.id });
-    await ctx.reply("Memory cleared ✅");
+    await ctx.reply("𝐌𝐞𝐦𝐨𝐫𝐲 𝐜𝐥𝐞𝐚𝐫𝐞𝐝 ✅");
   }
 });
 
@@ -117,7 +120,6 @@ bot.command("clear", async (ctx) => {
 bot.on("text", async (ctx) => {
   const text = ctx.message.text;
 
-  // Save to DB
   if (chats) {
     await chats.updateOne(
       { _id: ctx.chat.id },
@@ -128,7 +130,6 @@ bot.on("text", async (ctx) => {
 
   await ctx.sendChatAction("typing");
 
-  // prompt နဲ့ user id ပို့ပြီး AI အဖြေယူမယ်
   const reply = await getAIReply(text, ctx.from.id);
   await sendLong(ctx, reply);
 });
@@ -153,7 +154,6 @@ const PORT = process.env.PORT || 8080;
   app.listen(PORT, async () => {
     console.log("Server running on port", PORT);
     try {
-      // WEBHOOK_DOMAIN က https://... ဖြစ်ရပါမယ်
       await bot.telegram.setWebhook(WEBHOOK_DOMAIN + SECRET_PATH);
       console.log("Webhook set ✅");
     } catch (e) {
